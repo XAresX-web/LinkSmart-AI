@@ -5,6 +5,8 @@ import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+// Agregar import de los providers
+import { signInWithGoogle } from "./auth-providers";
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +19,7 @@ interface AuthContextType {
     fullName: string
   ) => Promise<any>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -93,6 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    signInWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,13 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createCheckoutSession, createCustomer } from "@/lib/stripe"
-import { supabase } from "@/lib/supabase"
+import { type NextRequest, NextResponse } from "next/server";
+import { createCheckoutSession, createCustomer } from "@/lib/stripe";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
-    const { priceId, userId } = await req.json()
+    const { priceId, userId } = await req.json();
 
     if (!priceId || !userId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // Obtener datos del usuario
@@ -15,10 +18,10 @@ export async function POST(req: NextRequest) {
       .from("users")
       .select("email, full_name")
       .eq("id", userId)
-      .single()
+      .single();
 
     if (userError || !user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Verificar si ya tiene un customer de Stripe
@@ -26,14 +29,14 @@ export async function POST(req: NextRequest) {
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", userId)
-      .single()
+      .single();
 
-    let customerId = subscription?.stripe_customer_id
+    let customerId = subscription?.stripe_customer_id;
 
     // Crear customer si no existe
     if (!customerId) {
-      const customer = await createCustomer(user.email, user.full_name)
-      customerId = customer.id
+      const customer = await createCustomer(user.email, user.full_name);
+      customerId = customer.id;
 
       // Guardar customer_id en la base de datos
       await supabase.from("subscriptions").upsert({
@@ -41,15 +44,18 @@ export async function POST(req: NextRequest) {
         stripe_customer_id: customerId,
         plan_type: "free",
         status: "active",
-      })
+      });
     }
 
     // Crear sesión de checkout
-    const session = await createCheckoutSession(priceId, customerId)
+    const session = await createCheckoutSession(priceId, customerId);
 
-    return NextResponse.json({ sessionId: session.id })
+    return NextResponse.json({ sessionId: session.id });
   } catch (error) {
-    console.error("Error creating checkout session:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error creating checkout session:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

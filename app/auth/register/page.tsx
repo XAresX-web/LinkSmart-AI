@@ -1,87 +1,127 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/lib/auth"
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/lib/auth";
+import { signInWithGoogle } from "@/lib/auth-providers"; // 👈 NUEVO
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Chrome } from "lucide-react";
 
 export default function RegisterPage() {
+  const [mounted, setMounted] = useState(false);
+
+  // Todos los hooks se declaran siempre al principio
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  });
 
-  const { signUp } = useAuth()
-  const router = useRouter()
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const { signUp } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden")
-      setLoading(false)
-      return
+      setError("Las contraseñas no coinciden");
+      setLoading(false);
+      return;
     }
 
     if (formData.password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres")
-      setLoading(false)
-      return
+      setError("La contraseña debe tener al menos 6 caracteres");
+      setLoading(false);
+      return;
     }
 
     try {
-      const { error } = await signUp(formData.email, formData.password, formData.username, formData.fullName)
+      const { error } = await signUp(
+        formData.email,
+        formData.password,
+        formData.username,
+        formData.fullName
+      );
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
-        router.push("/dashboard")
+        router.push("/dashboard");
       }
     } catch (err) {
-      setError("Error inesperado. Inténtalo de nuevo.")
+      console.error("Error inesperado en registro:", err);
+      setError("Error inesperado. Inténtalo de nuevo.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  // --- Social OAuth ---
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+    const { error } = await signInWithGoogle();
+    if (error) {
+      console.error("Error Google OAuth:", error);
+      setError("No se pudo iniciar sesión con Google.");
+      setLoading(false); // si hay error, detenemos loading aquí
+    }
+    // Si no hay error, Supabase redirige al proveedor; loading se limpiará al volver
+  };
 
   const passwordStrength = (password: string) => {
-    let strength = 0
-    if (password.length >= 6) strength++
-    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++
-    if (password.match(/\d/)) strength++
-    if (password.match(/[^a-zA-Z\d]/)) strength++
-    return strength
-  }
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+    if (password.match(/\d/)) strength++;
+    if (password.match(/[^a-zA-Z\d]/)) strength++;
+    return strength;
+  };
 
-  const strength = passwordStrength(formData.password)
+  const strength = passwordStrength(formData.password);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio
           </Link>
@@ -93,10 +133,14 @@ export default function RegisterPage() {
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">E</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">EnlaceHub</span>
+              <span className="text-2xl font-bold text-gray-900">
+                EnlaceHub
+              </span>
             </div>
             <CardTitle className="text-2xl">Crear Cuenta</CardTitle>
-            <CardDescription>Comienza gratis y crea tu página de enlaces en minutos</CardDescription>
+            <CardDescription>
+              Comienza gratis y crea tu página de enlaces en minutos
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,6 +160,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Tu nombre completo"
                   required
+                  autoComplete="name"
                 />
               </div>
 
@@ -131,6 +176,7 @@ export default function RegisterPage() {
                     placeholder="tunombre"
                     required
                     className="pl-3"
+                    autoComplete="username"
                   />
                   <div className="absolute inset-y-0 right-3 flex items-center text-sm text-gray-500">
                     .enlacehub.com
@@ -148,6 +194,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="tu@email.com"
                   required
+                  autoComplete="email"
                 />
               </div>
 
@@ -162,6 +209,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     placeholder="Mínimo 6 caracteres"
                     required
+                    autoComplete="new-password"
                   />
                   <Button
                     type="button"
@@ -188,10 +236,10 @@ export default function RegisterPage() {
                               ? strength === 1
                                 ? "bg-red-500"
                                 : strength === 2
-                                  ? "bg-yellow-500"
-                                  : strength === 3
-                                    ? "bg-blue-500"
-                                    : "bg-green-500"
+                                ? "bg-yellow-500"
+                                : strength === 3
+                                ? "bg-blue-500"
+                                : "bg-green-500"
                               : "bg-gray-200"
                           }`}
                         />
@@ -217,6 +265,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Repite tu contraseña"
                   required
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -244,10 +293,36 @@ export default function RegisterPage() {
               </Button>
             </form>
 
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  O regístrate con
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="bg-transparent"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+              >
+                <Chrome className="mr-2 h-4 w-4" />
+                Google
+              </Button>
+            </div>
+
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 ¿Ya tienes cuenta?{" "}
-                <Link href="/auth/login" className="text-purple-600 hover:text-purple-700 font-medium">
+                <Link
+                  href="/auth/login"
+                  className="text-purple-600 hover:text-purple-700 font-medium"
+                >
                   Inicia sesión
                 </Link>
               </p>
@@ -255,11 +330,17 @@ export default function RegisterPage() {
 
             <div className="mt-4 text-xs text-gray-500 text-center">
               Al crear una cuenta, aceptas nuestros{" "}
-              <Link href="/terms" className="text-purple-600 hover:text-purple-700">
+              <Link
+                href="/terms"
+                className="text-purple-600 hover:text-purple-700"
+              >
                 Términos de Servicio
               </Link>{" "}
               y{" "}
-              <Link href="/privacy" className="text-purple-600 hover:text-purple-700">
+              <Link
+                href="/privacy"
+                className="text-purple-600 hover:text-purple-700"
+              >
                 Política de Privacidad
               </Link>
             </div>
@@ -267,5 +348,5 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

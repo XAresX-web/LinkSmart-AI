@@ -1,52 +1,76 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useAuth } from "@/lib/auth"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/lib/auth";
+import { signInWithGoogle } from "@/lib/auth-providers"; // 👈 NUEVO
+import { Eye, EyeOff, ArrowLeft, Chrome } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { signIn } = useAuth()
-  const router = useRouter()
+  const { signIn } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const { error } = await signIn(email, password)
+      const { error } = await signIn(email, password);
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
-        router.push("/dashboard")
+        router.push("/dashboard");
       }
     } catch (err) {
-      setError("Error inesperado. Inténtalo de nuevo.")
+      console.error("Error login:", err);
+      setError("Error inesperado. Inténtalo de nuevo.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  // --- Social OAuth ---
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+    const { error } = await signInWithGoogle();
+    if (error) {
+      console.error("Error Google OAuth:", error);
+      setError("No se pudo iniciar sesión con Google.");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
             Volver al inicio
           </Link>
@@ -58,10 +82,14 @@ export default function LoginPage() {
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold">E</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">EnlaceHub</span>
+              <span className="text-2xl font-bold text-gray-900">
+                EnlaceHub
+              </span>
             </div>
             <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-            <CardDescription>Accede a tu cuenta para gestionar tus enlaces</CardDescription>
+            <CardDescription>
+              Accede a tu cuenta para gestionar tus enlaces
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,6 +108,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
                   required
+                  autoComplete="email"
                 />
               </div>
 
@@ -93,6 +122,7 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Tu contraseña"
                     required
+                    autoComplete="current-password"
                   />
                   <Button
                     type="button"
@@ -111,7 +141,10 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link href="/auth/forgot-password" className="text-sm text-purple-600 hover:text-purple-700">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-purple-600 hover:text-purple-700"
+                >
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -125,10 +158,36 @@ export default function LoginPage() {
               </Button>
             </form>
 
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">
+                  O continúa con
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="bg-transparent"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+              >
+                <Chrome className="mr-2 h-4 w-4" />
+                Google
+              </Button>
+            </div>
+
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 ¿No tienes cuenta?{" "}
-                <Link href="/auth/register" className="text-purple-600 hover:text-purple-700 font-medium">
+                <Link
+                  href="/auth/register"
+                  className="text-purple-600 hover:text-purple-700 font-medium"
+                >
                   Regístrate gratis
                 </Link>
               </p>
@@ -137,5 +196,5 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
